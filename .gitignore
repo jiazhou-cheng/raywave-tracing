@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 .Python
 *.so
+.Trash-*
 
 # Virtual environments
 .venv/
@@ -23,3 +24,9 @@ outputs/
 # OS
 .DS_Store
 Thumbs.db
+
+# docker
+Dockerfile
+docker-compose.yml
+run_container.sh
+.dockerignore
