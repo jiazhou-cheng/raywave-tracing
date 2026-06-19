@@ -1,15 +1,12 @@
+"""Compatibility wrapper for :mod:`src.loss`."""
+
 from __future__ import annotations
 
-import torch
+import sys
+from pathlib import Path
 
-EPS = 1e-12
-
-
-def loss_from_field_sum(field_sum: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-    intensity = field_sum.abs().to(target.dtype) ** 2
-    if intensity.shape != target.shape:
-        raise ValueError(f"Intensity shape {tuple(intensity.shape)} does not match target {tuple(target.shape)}.")
-    # scale = (torch.sum(intensity * target) / (torch.sum(intensity * intensity) + EPS)).detach()
-    intensity /= intensity.sum().clamp_min(EPS)
-    target /= target.sum().clamp_min(EPS)
-    return torch.norm(intensity - target) ** 2
+try:
+    from src.loss import *  # noqa: F401,F403
+except ModuleNotFoundError:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from src.loss import *  # noqa: F401,F403

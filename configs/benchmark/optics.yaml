@@ -13,11 +13,12 @@ surfaces:
     aperture_radius_mm: null
     origin_xy_mm: [0.0, 0.0]
     phase_profile: optimizable
-    out_primary_ray_count: 512
-    sampled_secondary_ray_count: 16384
+    out_primary_ray_count: 4096
+    sampled_secondary_ray_count: 32768
     preserve_energy: true
     n_before: 1.0
     n_after: 1.0
+    ray_sampling: multinomial
 
   - type: refractive
     name: lens_front

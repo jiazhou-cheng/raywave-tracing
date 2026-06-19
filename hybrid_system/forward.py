@@ -11,7 +11,7 @@ try:
         RaywaveDOESurfaceConfig,
         RefractiveSurfaceConfig,
     )
-    from .utils import (
+    from src import (
         CurvedRefractiveSurface,
         FlatDoeSurface,
         complex_dtype_for,
@@ -87,6 +87,9 @@ def make_doe_surface(
         preserve_energy=surface.preserve_energy,
         n_before=surface.n_before,
         n_after=surface.n_after,
+        ray_sampling=surface.ray_sampling,
+        gumbel_tau=surface.gumbel_tau,
+        gumbel_straight_through=surface.gumbel_straight_through,
         device=device,
         dtype=dtype,
     )

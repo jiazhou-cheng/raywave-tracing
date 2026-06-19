@@ -1,0 +1,11 @@
+target: hybrid_system/smile.png
+# Omit init_phase (or set null) for uniform random phase on the DOE aperture.
+init_phase: null
+results_dir: /outputs/optimization_gumbel
+epochs: 100
+steps_per_epoch: 1024
+lr: 10.0
+seed: 1234
+two_pass: false
+device: auto
+dtype: float32

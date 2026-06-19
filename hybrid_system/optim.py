@@ -11,13 +11,16 @@ import torch
 
 try:
     from .config import (
+        DEFAULT_EXPERIMENT_VARIANT,
         HybridExperimentConfig,
         HybridForwardConfig,
+        experiment_config_paths_from_dir,
         load_combined_experiment_config,
         load_experiment_config,
     )
     from .forward import forward, make_doe_grid
-    from .utils import (
+    from src import (
+        RuntimeMetricsRecorder,
         load_phase_npy,
         load_target_image,
         loss_from_field_sum,
@@ -28,13 +31,16 @@ try:
     )
 except ImportError:
     from config import (
+        DEFAULT_EXPERIMENT_VARIANT,
         HybridExperimentConfig,
         HybridForwardConfig,
+        experiment_config_paths_from_dir,
         load_combined_experiment_config,
         load_experiment_config,
     )
     from forward import forward, make_doe_grid
-    from utils import (
+    from src import (
+        RuntimeMetricsRecorder,
         load_phase_npy,
         load_target_image,
         loss_from_field_sum,
@@ -104,10 +110,30 @@ def optimize_phase(
     lr: float,
     base_seed: int,
     two_pass: bool = True,
+    record_runtime: bool = False,
+    runtime_metrics_path: Optional[str] = None,
 ) -> torch.Tensor:
     out = make_output_dirs(results_dir)
     device = target.device
     dtype = target.dtype
+    recorder = RuntimeMetricsRecorder(
+        output_path=runtime_metrics_path or os.path.join(results_dir, "runtime_metrics.json"),
+        device=device,
+        enabled=record_runtime,
+        metadata={
+            "results_dir": results_dir,
+            "num_epochs": int(num_epochs),
+            "num_steps_per_epoch": int(num_steps_per_epoch),
+            "two_pass": bool(two_pass),
+            "num_input_rays": int(config.num_input_rays),
+            "out_primary_ray_count": int(config.out_primary_ray_count),
+            "sampled_secondary_ray_count": int(config.sampled_secondary_ray_count),
+            "ray_sampling": config.ray_sampling,
+            "device": str(device),
+            "dtype": str(dtype),
+        },
+    )
+    recorder.start()
     _, _, mask = make_doe_grid(config, device=device, dtype=dtype)
     phase = initialize_phase(init_phase, config=config, mask=mask, device=device, dtype=dtype)
 
@@ -117,6 +143,7 @@ def optimize_phase(
     lr_history: list[float] = []
 
     for epoch in range(num_epochs):
+        recorder.begin_iteration(epoch=int(epoch))
         epoch_seed = int(base_seed + epoch * 100000)
         optimizer.zero_grad(set_to_none=True)
 
@@ -182,18 +209,62 @@ def optimize_phase(
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+        recorder.end_iteration(
+            epoch=int(epoch),
+            loss=loss_value,
+            lr=lr_history[-1],
+        )
 
     save_loss_plot(loss_history, lr_history, os.path.join(out["history"], "loss.png"))
+    recorder.finish(
+        final_loss=loss_history[-1] if loss_history else None,
+        final_lr=lr_history[-1] if lr_history else None,
+    )
     return phase.detach()
+
+
+def resolve_config_sources(args: argparse.Namespace) -> argparse.Namespace:
+    if args.config is not None:
+        return args
+
+    if args.config_dir is not None:
+        if args.optical_config is not None or args.optimization_config is not None:
+            raise ValueError(
+                "Use either --config-dir or (--optical-config and --optimization-config), not both."
+            )
+        optical_path, optimization_path = experiment_config_paths_from_dir(args.config_dir)
+        args.optical_config = str(optical_path)
+        args.optimization_config = str(optimization_path)
+        return args
+
+    if args.optical_config is not None or args.optimization_config is not None:
+        if args.optical_config is None or args.optimization_config is None:
+            raise ValueError("Provide both --optical-config and --optimization-config.")
+        return args
+
+    optical_path, optimization_path = experiment_config_paths_from_dir(DEFAULT_EXPERIMENT_VARIANT)
+    args.config_dir = DEFAULT_EXPERIMENT_VARIANT
+    args.optical_config = str(optical_path)
+    args.optimization_config = str(optimization_path)
+    return args
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Optimize the hybrid RayWave DOE demo.")
     parser.add_argument(
+        "--config-dir",
+        type=str,
+        default=None,
+        help=(
+            "Folder containing optics.yaml and optimization.yaml. "
+            "Accepts a variant name (e.g. hybrid_multinomial) or an absolute path."
+        ),
+    )
+    parser.add_argument(
         "--optical-config",
         type=str,
         default=None,
-        help="YAML/JSON optical system configuration.",
+        help="YAML/JSON optics configuration (e.g. configs/hybrid_gumbel/optics.yaml).",
     )
     parser.add_argument(
         "--optimization-config",
@@ -207,14 +278,29 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Combined YAML with optical_system and optimization sections.",
     )
+    parser.add_argument(
+        "--record-runtime",
+        action="store_true",
+        default=None,
+        help="Record per-epoch runtime and GPU memory metrics to runtime_metrics.json.",
+    )
+    parser.add_argument(
+        "--no-record-runtime",
+        action="store_false",
+        dest="record_runtime",
+        help="Disable runtime recording even if enabled in the optimization config.",
+    )
     args = parser.parse_args()
     if args.config is not None:
-        if args.optical_config is not None or args.optimization_config is not None:
-            parser.error("Use either --config or (--optical-config and --optimization-config), not both.")
+        if args.config_dir is not None or args.optical_config is not None or args.optimization_config is not None:
+            parser.error(
+                "Use either --config, --config-dir, or (--optical-config and --optimization-config), not a mix."
+            )
         return args
-    if args.optical_config is None or args.optimization_config is None:
-        parser.error("Provide --optical-config and --optimization-config, or --config.")
-    return args
+    try:
+        return resolve_config_sources(args)
+    except ValueError as exc:
+        parser.error(str(exc))
 
 
 def main() -> None:
@@ -226,6 +312,11 @@ def main() -> None:
 
     config = experiment.optical_system
     optim_config = experiment.optimization
+    record_runtime = (
+        optim_config.record_runtime
+        if args.record_runtime is None
+        else bool(args.record_runtime)
+    )
     device = resolve_device(optim_config.device)
     dtype = resolve_dtype(optim_config.dtype)
 
@@ -244,12 +335,17 @@ def main() -> None:
     print(f"device={device}")
     if args.config is not None:
         print(f"config={args.config} (combined)")
+    elif args.config_dir is not None:
+        print(f"config_dir={Path(args.optical_config).resolve().parent}")
+        print(f"optical_config={Path(args.optical_config).resolve()}")
+        print(f"optimization_config={Path(args.optimization_config).resolve()}")
     else:
         print(f"optical_config={Path(args.optical_config).resolve()}")
         print(f"optimization_config={Path(args.optimization_config).resolve()}")
     print(f"wavelength={config.wavelength_um:.3f} um, sensor_z={config.sensor_z_mm:.3f} mm")
     print(f"DOE={config.doe_grid_size} x {config.doe_grid_size}, pitch={config.doe_pitch_mm * 1e3:.3f} um")
     print(f"rays={config.num_input_rays} -> {config.out_primary_ray_count} x {config.sampled_secondary_ray_count}")
+    print(f"record_runtime={record_runtime}")
 
     optimize_phase(
         target=target,
@@ -261,6 +357,7 @@ def main() -> None:
         lr=optim_config.lr,
         base_seed=optim_config.seed,
         two_pass=optim_config.two_pass,
+        record_runtime=record_runtime,
     )
 
 

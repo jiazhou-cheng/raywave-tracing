@@ -16,7 +16,7 @@ from .config import (
     optimization_config_from_dict,
 )
 from .forward import forward, forward_from_complex_field, make_doe_grid, make_doe_surface, trace_system
-from .utils import CurvedRefractiveSurface, FlatDoeSurface
+from src import CurvedRefractiveSurface, FlatDoeSurface
 
 __all__ = [
     "CurvedRefractiveSurface",

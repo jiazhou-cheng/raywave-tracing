@@ -10,17 +10,86 @@ from typing import Any, Optional, Tuple
 import torch
 
 try:
-    from .utils import FlatDoeSurface
+    from src import FlatDoeSurface
 except ImportError:
     from utils import FlatDoeSurface
 
-_CONFIG_DIR = Path(__file__).resolve().parent / "configs"
+_CONFIG_DIR = Path(__file__).resolve().parents[1] / "configs"
+DEFAULT_EXPERIMENT_VARIANT = "hybrid_multinomial"
+_OPTICS_CONFIG_NAMES = ("optics.yaml", "optical_system.yaml")
+_OPTIMIZATION_CONFIG_NAME = "optimization.yaml"
+
+
+def resolve_experiment_config_dir(path: str | Path) -> Path:
+    """Resolve a config folder from an absolute path or a variant name under configs/."""
+    candidate = Path(path)
+    if candidate.is_dir():
+        return candidate.resolve()
+    under_configs = _CONFIG_DIR / candidate
+    if under_configs.is_dir():
+        return under_configs.resolve()
+    raise FileNotFoundError(
+        f"Config folder {path!r} not found. Expected an existing directory or a variant under {_CONFIG_DIR}."
+    )
+
+
+def experiment_config_paths_from_dir(path: str | Path) -> tuple[Path, Path]:
+    """Return (optics, optimization) config paths from a folder or variant name."""
+    config_dir = resolve_experiment_config_dir(path)
+    optics_path = next(
+        (config_dir / name for name in _OPTICS_CONFIG_NAMES if (config_dir / name).is_file()),
+        None,
+    )
+    optimization_path = config_dir / _OPTIMIZATION_CONFIG_NAME
+    missing: list[str] = []
+    if optics_path is None:
+        missing.append(f"one of {list(_OPTICS_CONFIG_NAMES)!r}")
+    if not optimization_path.is_file():
+        missing.append(repr(_OPTIMIZATION_CONFIG_NAME))
+    if missing:
+        raise FileNotFoundError(
+            f"Config folder {config_dir} is missing required file(s): {', '.join(missing)}."
+        )
+    return optics_path, optimization_path
 
 
 @dataclass
 class SourceConfig:
     z_mm: float
     num_input_rays: int
+
+
+def _normalize_ray_sampling(mode: str) -> str:
+    key = str(mode).strip().lower()
+    if key in {"gumbel", "gumbel_softmax", "gumbel-softmax"}:
+        return "gumbel"
+    if key in {"multinomial", "mc", "sample"}:
+        return "multinomial"
+    raise ValueError(
+        f"Unsupported ray_sampling {mode!r}. Expected 'multinomial' or 'gumbel'."
+    )
+
+
+_DOE_SURFACE_KEYS = frozenset(
+    {
+        "z_mm",
+        "grid_size",
+        "pitch_mm",
+        "out_primary_ray_count",
+        "sampled_secondary_ray_count",
+        "n_before",
+        "n_after",
+        "phase_profile",
+        "name",
+        "aperture_radius_mm",
+        "origin_xy_mm",
+        "preserve_energy",
+        "ray_sampling",
+        "gumbel_tau",
+        "gumbel_straight_through",
+        "type",
+    }
+)
 
 
 @dataclass
@@ -37,7 +106,15 @@ class RaywaveDOESurfaceConfig:
     aperture_radius_mm: Optional[float]
     origin_xy_mm: tuple[float, float]
     preserve_energy: bool
+    ray_sampling: str = "multinomial"
+    gumbel_tau: float = 3.0
+    gumbel_straight_through: bool = True
     type: str = "raywave_doe"
+
+    def __post_init__(self) -> None:
+        self.ray_sampling = _normalize_ray_sampling(self.ray_sampling)
+        self.gumbel_tau = float(self.gumbel_tau)
+        self.gumbel_straight_through = bool(self.gumbel_straight_through)
 
     @property
     def resolved_aperture_radius_mm(self) -> float:
@@ -147,6 +224,18 @@ class HybridForwardConfig:
     def preserve_energy(self) -> bool:
         return self.doe.preserve_energy
 
+    @property
+    def ray_sampling(self) -> str:
+        return self.doe.ray_sampling
+
+    @property
+    def gumbel_tau(self) -> float:
+        return self.doe.gumbel_tau
+
+    @property
+    def gumbel_straight_through(self) -> bool:
+        return self.doe.gumbel_straight_through
+
     def flat_doe_surface(
         self,
         device: torch.device,
@@ -166,6 +255,9 @@ class HybridForwardConfig:
             preserve_energy=spec.preserve_energy,
             n_before=spec.n_before,
             n_after=spec.n_after,
+            ray_sampling=spec.ray_sampling,
+            gumbel_tau=spec.gumbel_tau,
+            gumbel_straight_through=spec.gumbel_straight_through,
             device=device,
             dtype=dtype,
         )
@@ -185,6 +277,9 @@ class HybridForwardConfig:
             "oversamp": (sensor_updates, "oversamp"),
             "out_primary_ray_count": (doe_updates, "out_primary_ray_count"),
             "sampled_secondary_ray_count": (doe_updates, "sampled_secondary_ray_count"),
+            "ray_sampling": (doe_updates, "ray_sampling"),
+            "gumbel_tau": (doe_updates, "gumbel_tau"),
+            "gumbel_straight_through": (doe_updates, "gumbel_straight_through"),
         }
 
         for key, value in kwargs.items():
@@ -193,6 +288,8 @@ class HybridForwardConfig:
             if key not in key_to_target:
                 raise ValueError(f"Unsupported config override: {key}")
             target_dict, field_name = key_to_target[key]
+            if field_name == "ray_sampling":
+                value = _normalize_ray_sampling(value)
             target_dict[field_name] = value
 
         surfaces = [
@@ -222,6 +319,7 @@ class OptimizationConfig:
     device: str
     dtype: str
     init_phase: Optional[str] = None
+    record_runtime: bool = False
 
 
 @dataclass
@@ -246,7 +344,16 @@ def _surface_from_mapping(value: Any) -> RaywaveDOESurfaceConfig | RefractiveSur
     data = dict(value)
     surface_type = str(data.get("type", "")).lower()
     if surface_type in {"raywave_doe", "doe"}:
-        return RaywaveDOESurfaceConfig(**data)
+        payload = {k: v for k, v in data.items() if k in _DOE_SURFACE_KEYS}
+        stray = set(data) - set(payload)
+        for key in ("device", "dtype"):
+            stray.discard(key)
+        if stray:
+            raise ValueError(
+                f"Unknown raywave_doe keys {sorted(stray)!r}. "
+                f"Put device/dtype under optimization config, not on the DOE surface."
+            )
+        return RaywaveDOESurfaceConfig(**payload)
     if surface_type in {"refractive", "refractive_surface"}:
         return RefractiveSurfaceConfig(**data)
     raise ValueError(f"Unsupported surface type {surface_type!r}. Expected 'raywave_doe' or 'refractive'.")
@@ -295,6 +402,8 @@ def load_optical_config(path: str | Path) -> HybridForwardConfig:
     data = _load_mapping(config_path)
     if "optical_system" in data:
         data = data["optical_system"]
+    elif "optics" in data:
+        data = data["optics"]
     return optical_config_from_dict(data)
 
 
