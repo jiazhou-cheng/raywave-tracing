@@ -1,0 +1,42 @@
+wavelength_um: 1.0
+
+source:
+  z_mm: 0.1
+  num_input_rays: 3000
+
+surface:
+  name: curved_doe
+  z_mm: 0.0
+  grid_size: 501
+  pitch_mm: 0.0005
+  aperture_radius_mm: 0.125
+  origin_xy_mm: [0.0, 0.0]
+  phase_profile: optimizable
+  sampled_secondary_ray_count: 4000
+  preserve_energy: false
+  n_before: 1.0
+  n_after: 1.0
+  ray_sampling: multinomial
+  patch_px: 201
+  pad_factor: 2
+  window: none
+  surface_type: two_bump
+  z_offset_mm: 0.0
+  x_min_mm: -0.125
+  x_max_mm: 0.125
+  y_min_mm: -0.125
+  y_max_mm: 0.125
+  bump1_center: [0.6, 0.6]
+  bump1_radius: 0.15
+  bump1_height: 0.0001
+  bump2_center: [0.3, 0.3]
+  bump2_radius: 0.1
+  bump2_height: 0.0001
+  edge_width: 0.05
+
+sensor:
+  z_mm: 0.2505
+  grid_size: 2501
+  pitch_mm: 0.0001
+  oversamp: 2.0
+  n_before: 1.0

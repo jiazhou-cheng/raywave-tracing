@@ -1,0 +1,11 @@
+target: hybrid_system_fig6/smile.png
+init_phase: null
+results_dir: ./outputs/hybrid_system_fig6
+epochs: 100
+steps_per_epoch: 128
+lr: 10.0
+seed: 1234
+two_pass: true
+device: auto
+dtype: float32
+record_runtime: false

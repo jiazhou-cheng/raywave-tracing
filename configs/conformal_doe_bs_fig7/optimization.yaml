@@ -1,0 +1,12 @@
+target: synthetic:two_point
+init_phase: null
+results_dir: ./outputs/conformal_doe_bs_fig7
+epochs: 50
+steps_per_epoch: 1
+lr: 1.0
+lr_min: 1.0
+seed: 1234
+two_pass: false
+device: auto
+dtype: float32
+record_runtime: false

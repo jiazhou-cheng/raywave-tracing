@@ -253,7 +253,6 @@ class DoeRaywave(Aspheric):
         n_hat = self.normal_vec(ray)
         return self.refract_wft(ray, n1, n2, n_hat)
 
-    @torch.no_grad()
     def refract_wft(self, ray, n1: float, n2: float, n_hat: torch.Tensor):
         """Refract rays by converting local DOE patches into angular spectra."""
         assert self.has_grid(), "Call set_grid(field, dx, dy, origin_xy) first."
@@ -432,7 +431,7 @@ class DoeRaywave(Aspheric):
 
             # The spatial sampling factor keeps the unnormalized FFT convention
             # consistent across different DOE pixel pitches.
-            amps = spec_s * ((du * dv) / pdf_s) / spr
+            amps = spec_s * ((du * dv) / pdf_s.detach()) / spr
 
             o_s = o.unsqueeze(1).repeat(1, spr, 1).reshape(-1, 3)
             d_s = d_world.reshape(-1, 3)

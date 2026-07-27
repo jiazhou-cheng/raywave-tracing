@@ -17,9 +17,23 @@ env/
 .mypy_cache/
 .ruff_cache/
 .ipynb_checkpoints/
+.vscode/
 
 # Outputs
 outputs/
+
+# archive
+archive/
+archive/**
+!archive/.gitkeep
+!archive/**/.gitkeep
+!archive/**/**/.gitkeep
+!archive/**/**/**/.gitkeep
+!archive/**/**/**/**/.gitkeep
+!archive/**/**/**/**/**/.gitkeep
+!archive/**/**/**/**/**/**/.gitkeep
+!archive/**/**/**/**/**/**/**/.gitkeep
+!archive/**/**/**/**/**/**/**/**/.gitkeep
 
 # OS
 .DS_Store
