@@ -6,15 +6,15 @@ Hybrid refractive–diffractive systems are hard to model: rays and waves live a
   <img src="figures/figure1.png" width="70%" alt="Ray–wave overview">
 </p>
 
-## DeepLens integration
+## Plug-and-play and lightweight implementation
 
 Ray tracing builds on open-source [**DeepLens**](https://github.com/vccimaging/DeepLens) (`deeplens/`). Our plug-and-play ray–wave modules:
 
 | Module | Role |
 |--------|------|
 | [`deeplens/raywave.py`](deeplens/raywave.py) | Huygens PSF / coherent sensor rendering from traced rays |
-| [`deeplens/diffractive_surface/DoeRaywavePlane.py`](deeplens/diffractive_surface/DoeRaywavePlane.py) | Planar DOE surface (WFT → secondary rays) |
-| [`deeplens/diffractive_surface/DoeRaywave.py`](deeplens/diffractive_surface/DoeRaywave.py) | Curved / aspheric DOE surface |
+| [`deeplens/diffractive_surface/DoeRaywavePlane.py`](deeplens/diffractive_surface/DoeRaywavePlane.py) | Planar diffractive optical element (DOE) surface, full-field rule-of-thumb |
+| [`deeplens/diffractive_surface/DoeRaywave.py`](deeplens/diffractive_surface/DoeRaywave.py) | General DOE with aspheric surface sag, patch-based implementation |
 
 Standalone demos also use the lightweight package `src_lightweight/`.
 
@@ -38,7 +38,7 @@ Notebooks: [`benchmarks/`](benchmarks/) (DeepLens + `raywave`).
 
 ---
 
-## Inverse design
+## Inverse design (Fig. 6 and 7)
 
 ### Fig. 6 — Hybrid flat DOE + lens
 
