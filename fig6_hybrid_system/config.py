@@ -12,7 +12,7 @@ import torch
 from src_lightweight import FlatDoeSurface
 
 _CONFIG_DIR = Path(__file__).resolve().parents[1] / "configs"
-DEFAULT_EXPERIMENT_VARIANT = "hybrid_system_fig6"
+DEFAULT_EXPERIMENT_VARIANT = "fig6_hybrid_system"
 _OPTICS_CONFIG_NAMES = ("optics.yaml", "optical_system.yaml")
 _OPTIMIZATION_CONFIG_NAME = "optimization.yaml"
 

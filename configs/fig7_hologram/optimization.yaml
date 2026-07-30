@@ -1,6 +1,6 @@
-target: conformal_doe_fig7/stanford_s.png
+target: fig7_conformal_doe/stanford_s.png
 init_phase: null
-results_dir: ./outputs/conformal_doe_hologram_fig7
+results_dir: ./outputs/fig7_hologram
 epochs: 50
 steps_per_epoch: 2
 lr: 25.0

@@ -1,6 +1,6 @@
 target: synthetic:two_point
 init_phase: null
-results_dir: ./outputs/conformal_doe_bs_fig7
+results_dir: ./outputs/fig7_beamsplitter
 epochs: 50
 steps_per_epoch: 1
 lr: 1.0

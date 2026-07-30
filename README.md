@@ -1,6 +1,8 @@
 # Differentiable Ray–Wave Modeling for Hybrid Optical Systems
 
-Hybrid refractive–diffractive systems are hard to model: rays and waves live at different spatial scales. This repo provides a **differentiable ray–wave** framework that plugs into standard ray tracing, supports **planar and curved** DOEs, and enables end-to-end inverse design at a single wavelength.
+**Paper (ACS Photonics):** [doi:10.1021/acsphotonics.6c00818](https://doi.org/10.1021/acsphotonics.6c00818)
+
+Hybrid refractive–diffractive systems are hard to model: rays and waves live at different spatial scales. This repo provides a **differentiable ray–wave** framework that plugs into standard ray tracing, supports **planar and curved** DOEs with arbitrary **holographic** / **complex-amplitude** profiles, and enables end-to-end inverse design.
 
 <p align="center">
   <img src="figures/figure1.png" width="70%" alt="Ray–wave overview">
@@ -34,7 +36,7 @@ Three systems vs. conventional methods (λ = 0.7 µm): (a) grating + lens, (b) f
 | (b) Planar hologram | Angular spectrum (ASM) | MSE 4.4×10⁻¹⁰, NCC 0.997 |
 | (c) Hologram + lens | — | Non-paraxial speckles missed by paraxial design |
 
-Notebooks: [`benchmarks/`](benchmarks/) (DeepLens + `raywave`).
+Notebooks: [`fig5_benchmark/`](fig5_benchmark/) (DeepLens + `raywave`).
 
 ---
 
@@ -49,7 +51,7 @@ Paraxial design → NCC 0.462; end-to-end ray–wave optimization → **NCC 0.95
 </p>
 
 ```bash
-python -m hybrid_system_fig6.optim   # configs/hybrid_system_fig6
+python -m fig6_hybrid_system.optim   # configs/fig6_hybrid_system
 ```
 
 ### Fig. 7 — Conformal reflective DOE
@@ -61,8 +63,8 @@ Curved substrate (NA = 0.5, λ = 1 µm): two-focus beamsplitter and Stanford “
 </p>
 
 ```bash
-python -m conformal_doe_fig7.optim_beamsplitter   # configs/conformal_doe_bs_fig7
-python -m conformal_doe_fig7.optim_hologram       # configs/conformal_doe_hologram_fig7
+python -m fig7_conformal_doe.optim_beamsplitter   # configs/fig7_beamsplitter
+python -m fig7_conformal_doe.optim_hologram       # configs/fig7_hologram
 ```
 
 ---
@@ -70,13 +72,29 @@ python -m conformal_doe_fig7.optim_hologram       # configs/conformal_doe_hologr
 ## Layout
 
 ```
-deeplens/            # DeepLens fork + ray–wave plug-ins (raywave.py, DoeRaywave*)
-src_lightweight/     # standalone ray–wave primitives
-benchmarks/          # Fig. 5 notebooks
-hybrid_system_fig6/  # Fig. 6 inverse design
-conformal_doe_fig7/  # Fig. 7 conformal DOE
-configs/             # demo configs
-figures/             # paper figures
+deeplens/              # DeepLens fork + ray–wave plug-ins
+src_lightweight/       # standalone ray–wave primitives
+fig5_benchmark/        # Fig. 5 notebooks
+fig6_hybrid_system/    # Fig. 6 inverse design
+fig7_conformal_doe/    # Fig. 7 conformal DOE
+configs/               # demo configs (fig6_*, fig7_*)
+figures/               # paper figures
+```
+
+## Citation
+
+If you use this code, please cite:
+
+```bibtex
+@article{cheng2026differentiable,
+  author  = {Cheng, Jiazhou and Gao, Margaret and Shao, Yixuan and Mao, Chenkai and Milster, Tom D. and Fan, Jonathan A.},
+  title   = {A General Differentiable Ray--Wave Framework for Hybrid Refractive--Diffractive System Modeling and Optimization},
+  journal = {ACS Photonics},
+  year    = {2026},
+  doi     = {10.1021/acsphotonics.6c00818},
+  url     = {https://doi.org/10.1021/acsphotonics.6c00818},
+  publisher = {American Chemical Society}
+}
 ```
 
 ## Acknowledgment

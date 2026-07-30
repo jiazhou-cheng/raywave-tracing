@@ -44,3 +44,5 @@ Dockerfile
 docker-compose.yml
 run_container.sh
 .dockerignore
+
+.gitignore

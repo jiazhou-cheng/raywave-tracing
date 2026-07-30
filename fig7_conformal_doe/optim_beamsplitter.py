@@ -5,8 +5,8 @@ The DOE field is parameterized as:
     U(x, y) = exp(i * phi_1(x, y)) + exp(i * phi_2(x, y))
 
 HOW TO RUN:
-  python -m conformal_doe_fig7.optim_beamsplitter
-  python -m conformal_doe_fig7.optim_beamsplitter --config-dir configs/conformal_doe_bs_fig7
+  python -m fig7_conformal_doe.optim_beamsplitter
+  python -m fig7_conformal_doe.optim_beamsplitter --config-dir configs/fig7_beamsplitter
 """
 
 from __future__ import annotations
@@ -495,7 +495,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--config-dir",
         type=str,
-        default="configs/conformal_doe_bs_fig7",
+        default="configs/fig7_beamsplitter",
     )
     parser.add_argument("--optical-config", type=str, default=None)
     parser.add_argument("--optimization-config", type=str, default=None)

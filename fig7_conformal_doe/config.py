@@ -12,7 +12,7 @@ import torch
 from src_lightweight.optics.curved_doe import CurvedDoeSurface
 
 _CONFIG_DIR = Path(__file__).resolve().parents[1] / "configs"
-DEFAULT_EXPERIMENT_VARIANT = "conformal_doe_bs_fig7"
+DEFAULT_EXPERIMENT_VARIANT = "fig7_beamsplitter"
 _OPTICS_CONFIG_NAMES = ("optics.yaml", "optical_system.yaml")
 _OPTIMIZATION_CONFIG_NAME = "optimization.yaml"
 

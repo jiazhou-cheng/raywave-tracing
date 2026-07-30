@@ -1,6 +1,6 @@
-target: hybrid_system_fig6/smile.png
+target: fig6_hybrid_system/smile.png
 init_phase: null
-results_dir: ./outputs/hybrid_system_fig6
+results_dir: ./outputs/fig6_hybrid_system
 epochs: 100
 steps_per_epoch: 128
 lr: 10.0
