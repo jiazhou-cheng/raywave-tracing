@@ -1,6 +1,6 @@
 # Differentiable Ray–Wave Modeling for Hybrid Optical Systems
 
-**Paper (ACS Photonics):** [A Differentiable Ray--Wave Framework for Hybrid Refractive--Diffractive System Modeling and Optimization]([https://doi.org/10.1021/acsphotonics.6c00818](http://pubs.acs.org/doi/abs/10.1021/acsphotonics.6c00818)
+**Paper (ACS Photonics):** [A Differentiable Ray--Wave Framework for Hybrid Refractive--Diffractive System Modeling and Optimization](http://pubs.acs.org/doi/abs/10.1021/acsphotonics.6c00818)
 
 Hybrid refractive–diffractive systems are hard to model: rays and waves live at different spatial scales. This repo provides a **differentiable ray–wave** framework that plugs into standard ray tracing, supports **planar and curved** DOEs with arbitrary **holographic** / **complex-amplitude** profiles, and enables end-to-end inverse design.
 
